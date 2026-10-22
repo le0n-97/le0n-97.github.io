@@ -1,0 +1,18 @@
+{
+  "application": "Squares Duel",
+  "url": "https://le0n-97.github.io/squares-duel/",
+  "features": [
+    "username-password-accounts",
+    "sign-in-required",
+    "unequal-team-rating"
+  ],
+  "rating": {
+    "model": "team-share-v1",
+    "initialRating": 1000,
+    "teamK": 32
+  },
+  "guestPlay": false,
+  "sourceCommit": "b6dc4a38ac2247b54476c3589f3424e89b9c1b17",
+  "checks": 166,
+  "legacyFrontend": "closed"
+}
