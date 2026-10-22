@@ -1,0 +1,13 @@
+{
+  "application": "Squares Duel",
+  "url": "https://le0n-97.github.io/squares-duel/",
+  "features": [
+    "username-password-accounts",
+    "sign-in-required",
+    "account-room-reconnection"
+  ],
+  "guestPlay": false,
+  "sourceCommit": "534c6f9c9e10a7e377f336eb2bf8bb8546f16cac",
+  "checks": 144,
+  "legacyFrontend": "closed"
+}
