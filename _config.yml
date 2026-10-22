@@ -1,0 +1,4 @@
+exclude:
+  - squares-duel-src
+  - AGENTS.md
+  - README.md

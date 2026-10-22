@@ -1,0 +1,40 @@
+.word-statistics { margin:15px 0 17px; padding:14px; border:1px solid #e5e5d9; border-radius:9px; background:#f7f7ef; color:#68715e; }
+.word-statistics-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:11px; }
+.word-statistics-heading h3 { font-size:13px; line-height:1.5; font-weight:650; margin:0; color:#535d48; }
+.word-statistics-heading>span { font-size:11px; line-height:1.5; color:#8a9280; }
+.word-length-statistics,.word-initial-statistics { list-style:none; display:grid; gap:7px; padding:0; margin:0; }
+.word-length-statistics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.word-length-statistics>li,.word-initial-statistics>li { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:0; padding:10px 5px 9px; border:1px solid #e6e7db; border-radius:6px; background:#fffef8; }
+.word-stat-label { font-size:11px; line-height:1.4; color:#737d66; }
+.word-stat-count { font-size:13px; line-height:1.35; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.word-stat-count strong { font-size:18px; font-weight:650; color:var(--orange,#ef754c); }
+.word-stat-count>span { color:#8e967f; }
+.word-stat-remaining { font-size:11px; line-height:1.4; color:#929a86; }
+.word-stat-complete .word-stat-count strong { color:#82936d; }
+.word-stat-complete .word-stat-remaining { color:#7e8b6e; }
+.word-statistics-caption,.word-initial-caption { margin:8px 0 0; font-size:11px; line-height:1.6; color:#919985; }
+.word-hints-locked { display:flex; align-items:flex-start; gap:7px; margin:11px 0 0; padding-top:11px; border-top:1px solid #e4e6d8; color:#8c957e; font-size:11px; line-height:1.7; }
+.word-hints-locked>svg { flex-shrink:0; margin-top:2px; }
+.word-hints-locked strong { color:#b77355; font-weight:650; font-variant-numeric:tabular-nums; }
+.word-initial-details { margin-top:11px; padding-top:10px; border-top:1px solid #e4e6d8; }
+.word-initial-details>summary { cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:9px; font-size:12px; line-height:1.6; color:#65715a; list-style:none; }
+.word-initial-details>summary::-webkit-details-marker { display:none; }
+.word-initial-details>summary>span { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.word-initial-details>summary>svg { transition:transform .18s ease; flex-shrink:0; }
+.word-initial-details[open]>summary>svg { transform:rotate(180deg); }
+.word-initial-details>summary:focus-visible { outline:2px solid #ef754c88; outline-offset:4px; border-radius:3px; }
+.word-hints-unlocked { color:#84976b; background:#eaf0df; border:1px solid #dde6ce; border-radius:4px; font-size:10px; line-height:1.5; padding:1px 5px; }
+.word-initial-statistics { grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:9px; gap:6px; }
+.word-initial-statistics>li { padding:8px 3px 7px; gap:3px; }
+.word-initial-statistics .word-stat-label { font-size:14px; font-weight:650; color:#68735c; }
+.word-initial-statistics .word-stat-count { font-size:11px; }
+.word-initial-statistics .word-stat-count strong { font-size:15px; }
+@media (max-width:380px) { .word-statistics { padding:11px; }.word-statistics-heading { gap:3px; }.word-statistics-heading>span { font-size:10px; }.word-length-statistics { gap:5px; }.word-initial-statistics { gap:5px; } }
+@media (prefers-reduced-motion:reduce) { .word-initial-details>summary>svg { transition:none; } }
+.word-board-hints { display:flex; gap:8px; align-items:flex-start; margin-top:11px; padding-top:11px; border-top:1px solid #e4e6d8; color:#657653; }
+.word-board-hints>svg { flex-shrink:0; margin-top:2px; }
+.word-board-hints p { margin:0; color:#879475; font-size:11px; line-height:1.7; }
+.word-board-hints p:first-child { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-bottom:4px; }
+.word-board-hints strong { color:#647650; font-size:12px; font-weight:600; }
+.word-tile-caption { margin:9px 0 0; color:#969e8a; font-size:10px; line-height:1.7; }
+@media (max-width:550px) { .word-board-hints p,.word-tile-caption { font-size:11px; } }

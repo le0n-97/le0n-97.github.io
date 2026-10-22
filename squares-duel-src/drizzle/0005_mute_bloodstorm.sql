@@ -1,0 +1,1 @@
+CREATE INDEX `accounts_leaderboard_idx` ON `accounts` ("rating_milli" DESC,`username_key`) WHERE "accounts"."rated_games" > 0;

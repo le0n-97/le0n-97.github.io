@@ -1,0 +1,335 @@
+{
+  "id": "SCOWL-2020.12.07-ABZ-v1-60-80",
+  "project": "SCOWL (Spell Checker Oriented Word Lists)",
+  "upstreamVersion": "2020.12.07",
+  "upstreamTag": "rel-2020.12.07",
+  "upstreamRepository": "https://github.com/en-wl/wordlist/tree/rel-2020.12.07",
+  "upstreamRelease": "https://sourceforge.net/projects/wordlist/files/SCOWL/2020.12.07/",
+  "archiveUrl": "https://deb.debian.org/debian/pool/main/s/scowl/scowl_2020.12.07.orig.tar.gz",
+  "archiveSha256": "5587667caa20c4891390c2d42dbb4d5c4c3f41bee77af1457ece3ba23fb859cc",
+  "archiveBytes": 2569810,
+  "license": "SCOWL collective MIT-like license and included source notices; complete text in public/dictionary-license.txt",
+  "transformation": {
+    "categories": [
+      "english",
+      "american",
+      "british",
+      "british_z",
+      "variant_1",
+      "british_variant_1"
+    ],
+    "subcategory": "words only; excludes upper, proper-names, abbreviations, contractions, and special lists",
+    "normalization": "Accept only lowercase ASCII a-z, length 4 through 16, then uppercase, deduplicate and sort. No accents removed; no punctuation or names lowercased.",
+    "main": "Union of selected categories at sizes 10, 20, 35, 40, 50, 55 and 60",
+    "bonus": "Selected category sizes 70 and 80, excluding every main word",
+    "spelling": "American and British (-ise and -ize), including level-1 near-equal spelling variants"
+  },
+  "output": {
+    "mainWords": 79284,
+    "bonusWords": 167865,
+    "mainSha256": "246892ca324c4bc112d59148ed270cf7d1fe5b61142cd7516d259705f52ee621",
+    "bonusSha256": "86c48ca556f27882c64c4ab645df67b599b4cba0579ba079d627e6f8530dc49c",
+    "mainByLength": {
+      "4": 2602,
+      "5": 5162,
+      "6": 8354,
+      "7": 11672,
+      "8": 12764,
+      "9": 11849,
+      "10": 9849,
+      "11": 7150,
+      "12": 4698,
+      "13": 2753,
+      "14": 1415,
+      "15": 712,
+      "16": 304
+    },
+    "bonusByLength": {
+      "4": 2381,
+      "5": 6091,
+      "6": 11548,
+      "7": 18297,
+      "8": 24530,
+      "9": 25068,
+      "10": 22772,
+      "11": 18622,
+      "12": 14147,
+      "13": 10149,
+      "14": 7031,
+      "15": 4505,
+      "16": 2724
+    }
+  },
+  "inputs": [
+    {
+      "file": "final/american-words.10",
+      "sha256": "6ed66394d8b46ed12feac7aad989dfc4620c4f2051316ab774560aae71140994",
+      "accepted": 35
+    },
+    {
+      "file": "final/american-words.20",
+      "sha256": "a7ae730cd5f2ee11b584c163bf0750cc7659e336c3a04da1a8a2e9c44b604b9e",
+      "accepted": 154
+    },
+    {
+      "file": "final/american-words.35",
+      "sha256": "c999d002cfe31a2c3d9726eee1b87697402bb71cc831a2c63d064403c6a3a7fb",
+      "accepted": 889
+    },
+    {
+      "file": "final/american-words.40",
+      "sha256": "5a9c03d207087acabc969b32c6ef93ed376208287b2c8343f7952d0d06085577",
+      "accepted": 183
+    },
+    {
+      "file": "final/american-words.50",
+      "sha256": "1846537a15d7cf9f0b5fde8d2f69a9d3606856695c68de1701fc85d698646994",
+      "accepted": 639
+    },
+    {
+      "file": "final/american-words.55",
+      "sha256": "d5b6d504b907ef159b164286519fc96168737d60a62310ff5d74d2076ed97027",
+      "accepted": 208
+    },
+    {
+      "file": "final/american-words.60",
+      "sha256": "3296121b977bcc2fc3fab374b69d2a0891c825bb473ef8078161245b2a990f2f",
+      "accepted": 415
+    },
+    {
+      "file": "final/american-words.70",
+      "sha256": "96b09f0f5db4203fa41fca64d6c40833da0ccdc1c02f913628c7ed129a68f6c3",
+      "accepted": 1283
+    },
+    {
+      "file": "final/american-words.80",
+      "sha256": "7928b4c22500b10ad9959b0388c6c5020aa87aecec85001c0523856c70650c6f",
+      "accepted": 4227
+    },
+    {
+      "file": "final/british_variant_1-words.10",
+      "sha256": "c402c3cd1b21387ca293a7008df91c819dcdcbb787fcf540c655eabc605fc0e1",
+      "accepted": 14
+    },
+    {
+      "file": "final/british_variant_1-words.20",
+      "sha256": "a5b1bfc0afadf8be6e3d6454d69678974487d24d09a1b196572649d912098a0e",
+      "accepted": 36
+    },
+    {
+      "file": "final/british_variant_1-words.35",
+      "sha256": "09d6d87e1d8a0821d9f228aaf5e29e86f7658a2f77bba75dbe574ca3ef56423a",
+      "accepted": 205
+    },
+    {
+      "file": "final/british_variant_1-words.40",
+      "sha256": "c9a0c122c2f144e7732d60b8a7b326ec4ecec58772dd01ce681cae5d3158ef6a",
+      "accepted": 52
+    },
+    {
+      "file": "final/british_variant_1-words.50",
+      "sha256": "50f11c8d5ca6ef400315a74557fe77f64a9e8583f391173c4d4b48ab3be3a9dd",
+      "accepted": 206
+    },
+    {
+      "file": "final/british_variant_1-words.55",
+      "sha256": "ee5b5700e7011dca933829817e27933acdab938c7c2855ac3fe25bab0f88a8e7",
+      "accepted": 66
+    },
+    {
+      "file": "final/british_variant_1-words.60",
+      "sha256": "0252e4ab71e2f78c566e8b273241465604b08de761098d93bbd6b9a1d914709e",
+      "accepted": 123
+    },
+    {
+      "file": "final/british_variant_1-words.70",
+      "sha256": "86e50728621d0298b586333ea11bde9c74ef32d0849532e5fcd22497f6380c18",
+      "accepted": 35
+    },
+    {
+      "file": "final/british_variant_1-words.80",
+      "sha256": "476db4a190cf4065d048d6b43cee2c8020bd5e0d6acd52596531366751408e44",
+      "accepted": 95
+    },
+    {
+      "file": "final/british_z-words.10",
+      "sha256": "b205f1522869e4224dbe863df68384406bd7384b6449369da0d804a4a8c7f060",
+      "accepted": 42
+    },
+    {
+      "file": "final/british_z-words.20",
+      "sha256": "ef753e8715274875746ce111ce287ace4f60f238ebc167423fc022e289491868",
+      "accepted": 166
+    },
+    {
+      "file": "final/british_z-words.35",
+      "sha256": "c36736b97d534084d47355223dcea277a1cecb35132e9cdb25cc5f87b33b03c9",
+      "accepted": 896
+    },
+    {
+      "file": "final/british_z-words.40",
+      "sha256": "a7625e9308dc4517fe5d66540c78055cf4297f929fe224cb9595afd9a44b0951",
+      "accepted": 183
+    },
+    {
+      "file": "final/british_z-words.50",
+      "sha256": "ed898e93c7a50b3b827b3fd38b2685723e93c96c8354998e8c38cafefa333cfc",
+      "accepted": 637
+    },
+    {
+      "file": "final/british_z-words.55",
+      "sha256": "e1874908138bd932bb40519495e164a2d72b4cb7196e338bf4ddb3ae466bad59",
+      "accepted": 202
+    },
+    {
+      "file": "final/british_z-words.60",
+      "sha256": "0639c6e073d1e406c82b62693934129d5dc10303a18eafc7a137f51997a545f9",
+      "accepted": 413
+    },
+    {
+      "file": "final/british_z-words.70",
+      "sha256": "67eb39ae2cbe9532551b5efd6644129fe5765ea30656e1e36991fbe32dba4b61",
+      "accepted": 1283
+    },
+    {
+      "file": "final/british_z-words.80",
+      "sha256": "a97d9e1457b17034616a0879f3e581e2b044c7677baa913cdb32e5cfb0b27553",
+      "accepted": 4217
+    },
+    {
+      "file": "final/british-words.10",
+      "sha256": "cdf5841d5cbd9c0c07bddd7a2eb65b1d3d4c4dc7990f30edccfc0abb7d1236fa",
+      "accepted": 45
+    },
+    {
+      "file": "final/british-words.20",
+      "sha256": "50a1f325b1b278e418c0084428b1919f2a1ddc2bafc99234e1cf2e442dfca6c3",
+      "accepted": 175
+    },
+    {
+      "file": "final/british-words.35",
+      "sha256": "afb66faedb0c23d4619aab67110b58f0f640799811f51ef4182f5814f733c2ab",
+      "accepted": 908
+    },
+    {
+      "file": "final/british-words.40",
+      "sha256": "37d25a050c104761e2da3c4708522f5da7fcc3c6b87c4a4256ef96587570f714",
+      "accepted": 179
+    },
+    {
+      "file": "final/british-words.50",
+      "sha256": "1f973ca3ee598763df60a64049610ef06580fc8b3abe91cca689e3604f79414c",
+      "accepted": 642
+    },
+    {
+      "file": "final/british-words.55",
+      "sha256": "125d4d1c54d3ca1de0fc498e8b306066c5c589066d3c1dd3d2674b846c37e256",
+      "accepted": 202
+    },
+    {
+      "file": "final/british-words.60",
+      "sha256": "f0d338b32c8c6594ca515e336085b2a35987dde6cf0465f53feb8b51d9d54c7b",
+      "accepted": 413
+    },
+    {
+      "file": "final/british-words.70",
+      "sha256": "0ccec34c0a27dd004ed111ea133fa05a4ec2b33d83ff3339bc4ee61757d7d027",
+      "accepted": 1284
+    },
+    {
+      "file": "final/british-words.80",
+      "sha256": "fb8d1c1b211b162220112f5258fcce391892ae57e1eaf2f9ffb0bdd833e0882e",
+      "accepted": 4222
+    },
+    {
+      "file": "final/english-words.10",
+      "sha256": "f19988ecdb0280ab63340e5c5e155a814ab3d0f225ae60f5cb9e000252283b0b",
+      "accepted": 3751
+    },
+    {
+      "file": "final/english-words.20",
+      "sha256": "618998fff18fb9e143a5bab49e669ec48c023758f0db476d6b64ec06994ba71e",
+      "accepted": 6650
+    },
+    {
+      "file": "final/english-words.35",
+      "sha256": "f36ace33ff09bd5eda5f3ccbcc9971c1b6a8887fa62f5ad7f93e3c220d871388",
+      "accepted": 27078
+    },
+    {
+      "file": "final/english-words.40",
+      "sha256": "fc5c2058cd24af4ca6a9bca97ce7d300c8899753715d029fc8bb3cbe602eef7f",
+      "accepted": 4485
+    },
+    {
+      "file": "final/english-words.50",
+      "sha256": "ff5b1f1752df695e0512c1e9e096f22af2dc127119918b1e43a35582ef90da90",
+      "accepted": 16862
+    },
+    {
+      "file": "final/english-words.55",
+      "sha256": "be646fbdc9c4b4fef5b23e9c5678f7479534c428a7581745178642dfd9c744d6",
+      "accepted": 5417
+    },
+    {
+      "file": "final/english-words.60",
+      "sha256": "8922ac79ea926ae876d68f178fcb1107bbdf1b90996086f63ffc3e97da55427f",
+      "accepted": 9377
+    },
+    {
+      "file": "final/english-words.70",
+      "sha256": "283f54865410e896bdab53bdaf04fa4e1a3a189dc6961a4033714944ee67cb6a",
+      "accepted": 32670
+    },
+    {
+      "file": "final/english-words.80",
+      "sha256": "98b7cf3b40d17e8c060e283d1411895bd0c318076100707e3f72aa131c65ad59",
+      "accepted": 124023
+    },
+    {
+      "file": "final/variant_1-words.10",
+      "sha256": "81d515f89ce1ca204cdecabf78ce9a0e80b92f246f76889c8da54d34aa86b80d",
+      "accepted": 21
+    },
+    {
+      "file": "final/variant_1-words.20",
+      "sha256": "4d0198baff229261789ccd132410dd2b26f8c6ecdb71cc20a89e12b06ca05828",
+      "accepted": 59
+    },
+    {
+      "file": "final/variant_1-words.35",
+      "sha256": "f1d2ef482af14143e53620faa87a78202919823b6d135d2d1222354fbd031926",
+      "accepted": 369
+    },
+    {
+      "file": "final/variant_1-words.40",
+      "sha256": "5201cb504a0ccd83da54d30edda02ca94502691f7e7dcbed53912c44b4380dc0",
+      "accepted": 85
+    },
+    {
+      "file": "final/variant_1-words.50",
+      "sha256": "200428d96ca92b3c88baaad0423cdf425406ee22e1d6072f1c45678cf5eba5bb",
+      "accepted": 281
+    },
+    {
+      "file": "final/variant_1-words.55",
+      "sha256": "160cfa9f7b18eaca46e3ff554645dff11fdb299024f4bdd4deef2e973c161836",
+      "accepted": 89
+    },
+    {
+      "file": "final/variant_1-words.60",
+      "sha256": "a01494ae0870004467c3947b86b02c62e0b56519fa9d0a66f3ba36bba0418388",
+      "accepted": 168
+    },
+    {
+      "file": "final/variant_1-words.70",
+      "sha256": "f8b1f2002ac07aab883480569aa2dc1826e649ba62188fcffda584507301c547",
+      "accepted": 207
+    },
+    {
+      "file": "final/variant_1-words.80",
+      "sha256": "c7689f2179c49e669d8cee072d17f7b8fb2bca9abf08af236c433bb22100ec1e",
+      "accepted": 419
+    }
+  ]
+}

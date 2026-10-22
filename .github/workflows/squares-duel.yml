@@ -1,0 +1,90 @@
+name: Squares Duel checks and publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'squares-duel-src/**'
+      - '.github/workflows/squares-duel.yml'
+      - '_config.yml'
+  pull_request:
+    paths:
+      - 'squares-duel-src/**'
+      - '.github/workflows/squares-duel.yml'
+      - '_config.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: squares-duel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: squares-duel-src
+    outputs:
+      artifact: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: squares-duel-src/package-lock.json
+      - run: npm run install:ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run build:pages
+      - name: Assemble website and preserve the personal homepage
+        id: site
+        run: node scripts/prepare-pages-site.mjs
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: squares-duel-website
+          path: ${{ steps.site.outputs.directory }}
+          include-hidden-files: true
+          retention-days: 7
+
+  publish:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v5
+        with:
+          artifact-ids: ${{ needs.check.outputs.artifact }}
+          path: ${{ runner.temp }}/squares-duel-website
+          merge-multiple: true
+      - name: Record generated game files without overwriting newer work
+        id: record
+        run: node squares-duel-src/scripts/record-pages-build.mjs "$RUNNER_TEMP/squares-duel-website"
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.record.outputs.publish == 'true'
+        with:
+          path: ${{ runner.temp }}/squares-duel-website
+      - name: Publish GitHub Pages
+        id: deployment
+        if: steps.record.outputs.publish == 'true'
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,7 @@
+squares-duel-src/** text eol=lf
+.github/** text eol=lf
+README.md text eol=lf
+AGENTS.md text eol=lf
+_config.yml text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
