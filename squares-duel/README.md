@@ -6,4 +6,4 @@ The former website has closed. Its API continues to provide the database, room s
 
 This directory contains browser assets only. Server code, account data, game records and credentials are not included. The SCOWL dictionary license is available in [dictionary-license.txt](dictionary-license.txt).
 
-Website updates are exported from the maintained private working copy and copied into this directory. Keep the existing homepage and other repository files when publishing updates.
+The complete application source is maintained in [squares-duel-src](https://github.com/le0n-97/le0n-97.github.io/tree/main/squares-duel-src). GitHub Actions checks source changes and regenerates this directory before publishing. Keep the existing homepage and other repository files when publishing updates.

@@ -1,19 +1,7 @@
 {
-  "release": "account-dialog-and-connection-fix",
-  "sourceCommit": "aa9469e1b3a66c514d0aa852f1236422e8981c98",
-  "siteVersion": 19,
-  "features": [
-    "Account dialog closes only with its X button",
-    "Five-character minimum password in frontend and backend",
-    "Simple CORS login and registration requests",
-    "Bounded transient network retry and lost-registration-response recovery"
-  ],
-  "validation": {
-    "automatedTests": 188,
-    "typeCheck": true,
-    "sitesBuild": true,
-    "pagesBuild": true,
-    "productionAccountSmoke": true,
-    "browserInteractionTested": false
-  }
+  "repository": "le0n-97/le0n-97.github.io",
+  "sourceDirectory": "squares-duel-src",
+  "sourceCommit": "7fd776faaa0be54b2e3601aff5f6ba16145dc973",
+  "workflow": "squares-duel.yml",
+  "backend": "existing Sites API; backend releases are separate"
 }
