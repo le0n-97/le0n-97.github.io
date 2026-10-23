@@ -1,7 +1,7 @@
 {
   "repository": "le0n-97/le0n-97.github.io",
   "sourceDirectory": "squares-duel-src",
-  "sourceCommit": "7fd776faaa0be54b2e3601aff5f6ba16145dc973",
+  "sourceCommit": "beb979d5f60c31e9b1ab0ec176c379db6c8add11",
   "workflow": "squares-duel.yml",
   "backend": "existing Sites API; backend releases are separate"
 }
