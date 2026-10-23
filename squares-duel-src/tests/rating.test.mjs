@@ -12,15 +12,15 @@ const delta = (result, id) => result.changes.find(change => change.playerId === 
 const totalMilli = result => result.changes.reduce((total, change) => total + Math.round(change.delta * 1000), 0);
 const approximate = (actual, expected, tolerance = 1e-12) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} should equal ${expected}`);
 
-test('equal solo players use the Elo baseline and a full score win transfers 16', () => {
+test('equal solo players use the Elo baseline and a full score win transfers 160', () => {
   assert.equal(INITIAL_RATING, 1000);
-  assert.equal(RATING_K, 32);
+  assert.equal(RATING_K, 320);
   const snapshot = round(player('a', 0), player('b', 1));
   assert.deepEqual(snapshot.expectedShares, [0.5, 0.5]);
   const result = settleRating(snapshot, [100, 0]);
   assert.equal(result.rated, true);
-  assert.equal(delta(result, 'a'), 16);
-  assert.equal(delta(result, 'b'), -16);
+  assert.equal(delta(result, 'a'), 160);
+  assert.equal(delta(result, 'b'), -160);
   assert.equal(totalMilli(result), 0);
   assert.equal(result.changes[0].startRating, 1000);
   assert.equal(JSON.stringify(result).includes('account-'), false);
@@ -31,9 +31,9 @@ test('extra teammates contribute strength, and each team splits its transfer', (
   approximate(snapshot.expectedShares[0], 1 / 3);
   approximate(snapshot.expectedShares[1], 2 / 3);
   const result = settleRating(snapshot, [40, 60]);
-  assert.equal(delta(result, 'a'), 2.133);
-  assert.equal(delta(result, 'b'), -1.067);
-  assert.equal(delta(result, 'c'), -1.066);
+  assert.equal(delta(result, 'a'), 21.333);
+  assert.equal(delta(result, 'b'), -10.667);
+  assert.equal(delta(result, 'c'), -10.666);
   assert.equal(totalMilli(result), 0);
   const reordered = settleRating(round(...[...snapshot.players].reverse()), [40, 60]);
   for (const id of ['a', 'b', 'c']) assert.equal(delta(result, id), delta(reordered, id));
@@ -42,7 +42,7 @@ test('extra teammates contribute strength, and each team splits its transfer', (
 test('equal size teams gain equally per player and tied expected performance is still rated', () => {
   const snapshot = round(player('a', 0), player('b', 0), player('c', 1), player('d', 1));
   const win = settleRating(snapshot, [100, 0]);
-  assert.deepEqual(win.changes.map(change => change.delta), [8, 8, -8, -8]);
+  assert.deepEqual(win.changes.map(change => change.delta), [80, 80, -80, -80]);
   const tie = settleRating(snapshot, [7, 7]);
   assert.equal(tie.rated, true);
   assert.deepEqual(tie.changes.map(change => change.delta), [0, 0, 0, 0]);
@@ -81,11 +81,11 @@ test('swapping the teams swaps expectations and negates the team transfer within
 
 test('exact half-thousandth transfers round symmetrically when team colors swap', () => {
   const snapshot = round(player('a', 0), player('b', 1));
-  // 257 / 512 is exactly representable and produces a raw +62.5 thousandths.
-  const positive = settleRating(snapshot, [257, 255]);
-  const negative = settleRating(snapshot, [255, 257]);
-  assert.equal(delta(positive, 'a'), 0.063);
-  assert.equal(delta(negative, 'a'), -0.063);
+  // 513 / 1024 is exactly representable and produces a raw +312.5 thousandths.
+  const positive = settleRating(snapshot, [513, 511]);
+  const negative = settleRating(snapshot, [511, 513]);
+  assert.equal(delta(positive, 'a'), 0.313);
+  assert.equal(delta(negative, 'a'), -0.313);
   assert.equal(delta(positive, 'b'), delta(negative, 'a'));
   assert.equal(totalMilli(positive), 0);
   assert.equal(totalMilli(negative), 0);
@@ -118,11 +118,11 @@ test('extreme positive and negative ratings remain finite without arbitrary rati
   );
   assert.deepEqual(snapshot.expectedShares, [1, 0]);
   const upset = settleRating(snapshot, [0, 1]);
-  assert.equal(delta(upset, 'a'), -32);
-  assert.equal(delta(upset, 'b'), 32);
+  assert.equal(delta(upset, 'a'), -320);
+  assert.equal(delta(upset, 'b'), 320);
   assert.equal(totalMilli(upset), 0);
   const belowZero = settleRating(round(player('a', 0, 0), player('b', 1, 0)), [0, 1]);
-  assert.equal(delta(belowZero, 'a'), -16);
+  assert.equal(delta(belowZero, 'a'), -160);
 });
 
 test('missing snapshots and zero point games never change ratings', () => {

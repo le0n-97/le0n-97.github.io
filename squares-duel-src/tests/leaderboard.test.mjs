@@ -268,7 +268,7 @@ test('a real settled game immediately adds both players to the leaderboard and r
     assert.equal(result.status, 200);
     assert.equal(result.body.total, 2);
     assert.deepEqual(result.body.entries.map(({ username, rating, ratedGames }) => ({ username, rating, ratedGames })), [
-      { username: 'Alice', rating: 1016, ratedGames: 1 }, { username: 'Bobby', rating: 984, ratedGames: 1 },
+      { username: 'Alice', rating: 1160, ratedGames: 1 }, { username: 'Bobby', rating: 840, ratedGames: 1 },
     ]);
     assert.equal(result.body.me.username, token === members[0].token ? 'Alice' : 'Bobby');
     assert.ok(result.body.entries.find(entry => entry.isMe));

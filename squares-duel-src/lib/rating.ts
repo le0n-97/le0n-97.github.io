@@ -1,6 +1,6 @@
 /** Ratings use integer thousandths internally so a team transfer stays zero-sum. */
 export const INITIAL_RATING = 1000;
-export const RATING_K = 32;
+export const RATING_K = 320;
 
 export type RatingParticipant = {
   playerId: string;

@@ -123,7 +123,7 @@ test('normal API word submission, exhaustive-board finish and repeated polls app
   assert.equal(claim.status, 200);
   assert.equal(claim.body.room.status, 'finished');
   assert.equal(claim.body.room.ratingResult.rated, true);
-  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_016_000, 984_000]);
+  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_160_000, 840_000]);
   for (let i = 0; i < 3; i++) assert.equal((await poll(room.code, members[i % 2].token)).status, 200);
   assert.deepEqual(ledgerCounts(db), { rounds: 1, changes: 2 });
   assert.ok(members.every(member => stats(db, member).rated_games === 1));
@@ -182,7 +182,7 @@ test('a settlement CAS conflict and a simultaneous final Commit cannot apply dup
   assert.ok(results.some(result => result.status === 200));
   assert.ok(db.conflicts > 0);
   assert.deepEqual(ledgerCounts(db), { rounds: 1, changes: 2 });
-  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_016_000, 984_000]);
+  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_160_000, 840_000]);
 });
 
 test('two different rooms finishing concurrently add both changes without overwriting current account ratings', async t => {
@@ -193,7 +193,7 @@ test('two different rooms finishing concurrently add both changes without overwr
   db.syncNextReads(2);
   const results = await Promise.all(rooms.map(room => post({ action: 'commit', code: room.code }, members[1].token)));
   assert.ok(results.every(result => result.status === 200));
-  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_032_000, 968_000]);
+  assert.deepEqual(members.map(member => stats(db, member).rating_milli), [1_320_000, 680_000]);
   assert.ok(members.every(member => stats(db, member).rated_games === 2));
   assert.deepEqual(ledgerCounts(db), { rounds: 2, changes: 4 });
 });
