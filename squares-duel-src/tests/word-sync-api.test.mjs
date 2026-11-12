@@ -4,6 +4,7 @@ import { MemoryD1, runtimeURL } from './helpers.mjs';
 
 const accountApi = await import(runtimeURL('account-route.mjs'));
 const roomApi = await import(runtimeURL('word-sync-route.mjs'));
+const { createRoom, transition } = await import(runtimeURL('word-sync.mjs'));
 const origin = 'https://le0n-97.github.io';
 const api = 'https://example.test/api';
 
@@ -84,10 +85,11 @@ test('existing Squares account sessions control server rooms and simultaneous su
       assert.equal(publicJson.includes(privateValue), false);
     }
 
-    const revealed = await (await post(guest.token, 'submit', { round: 1, word: '梨' })).json();
-    assert.equal(revealed.room.phase, 'revealed');
-    assert.deepEqual(revealed.room.history[0].results.map(result => result.word), ['苹果', '梨']);
-    assert.equal((await post(host.token, 'next', { round: 1 })).status, 200);
+    const nextRound = await (await post(guest.token, 'submit', { round: 1, word: '梨' })).json();
+    assert.equal(nextRound.room.phase, 'playing');
+    assert.equal(nextRound.room.round, 2);
+    assert.deepEqual(nextRound.room.history[0].results.map(result => result.word), ['苹果', '梨']);
+    assert.deepEqual(nextRound.room.players.map(player => player.submitted), [false, false]);
     assert.equal((await post(guest.token, 'submit', { round: 1, word: '迟到的答案' })).status, 409);
 
     db.syncWordSyncReads();
@@ -96,7 +98,7 @@ test('existing Squares account sessions control server rooms and simultaneous su
     assert.equal(db.conflicts, 1);
     const finished = await (await get(host.token)).json();
     assert.equal(finished.room.phase, 'won');
-    assert.equal(finished.revision, 7);
+    assert.equal(finished.revision, 6);
     assert.equal(finished.room.history.length, 2);
     assert.deepEqual(finished.room.history[1].results.map(result => result.word), ['晴天', '晴天']);
 
@@ -105,6 +107,53 @@ test('existing Squares account sessions control server rooms and simultaneous su
     assert.equal(afterTransfer.room.hostId, afterTransfer.room.meId);
     assert.equal((await post(guest.token, 'leave')).status, 200);
     assert.equal((await get(guest.token)).status, 404);
+  } finally {
+    delete globalThis.__gameTestDB;
+    db.close();
+  }
+});
+
+test('concurrent member polls advance a saved legacy round exactly once', { timeout: 5000 }, async () => {
+  const db = new ConcurrentD1();
+  globalThis.__gameTestDB = db;
+  try {
+    const host = db.seedAccount('Host');
+    const guest = db.seedAccount('Guest');
+    const outsider = db.seedAccount('Outsider');
+    const legacy = createRoom('ABC234', host, 0);
+    transition(legacy, guest, { action: 'join' }, 1);
+    legacy.phase = 'revealed';
+    legacy.history.push({
+      round: 1,
+      results: [{ name: host.username, word: '苹果' }, { name: guest.username, word: '梨' }],
+      win: false,
+    });
+    db.sqlite.prepare('INSERT INTO word_sync_rooms (id, code, state, revision) VALUES (?, ?, ?, ?)')
+      .run('legacy', legacy.code, JSON.stringify(legacy), 10);
+
+    const poll = token => roomApi.GET(request(`word-sync?code=${legacy.code}`, token));
+    assert.equal((await poll(outsider.token)).status, 403);
+    assert.equal(db.sqlite.prepare('SELECT revision FROM word_sync_rooms WHERE id = ?').get('legacy').revision, 10);
+
+    db.syncWordSyncReads();
+    const snapshots = await Promise.all([host, guest].map(async account => {
+      const result = await poll(account.token);
+      assert.equal(result.status, 200);
+      return result.json();
+    }));
+    for (const { room, revision } of snapshots) {
+      assert.equal(room.phase, 'playing');
+      assert.equal(room.round, 2);
+      assert.equal(revision, 11);
+      assert.deepEqual(room.history, legacy.history);
+    }
+    assert.equal(db.conflicts, 1);
+
+    const cachedNext = await roomApi.POST(request('word-sync', host.token, {
+      action: 'next', code: legacy.code, round: 1,
+    }));
+    assert.equal(cachedNext.status, 200);
+    assert.deepEqual(await cachedNext.json(), snapshots[0]);
   } finally {
     delete globalThis.__gameTestDB;
     db.close();

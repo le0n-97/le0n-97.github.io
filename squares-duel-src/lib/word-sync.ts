@@ -58,6 +58,16 @@ function requireHost(room: WordSyncRoom, player: Player) {
   if (player.id !== room.hostId) throw new WordSyncError(403, '只有房主可以开始回合');
 }
 
+export function resumeRevealedRound(room: WordSyncRoom, now: number): boolean {
+  // Rooms saved by the previous version may still be waiting for the host.
+  if (room.phase !== 'revealed') return false;
+  room.round++;
+  room.phase = room.players.length >= 2 ? 'playing' : 'lobby';
+  room.answers = {};
+  room.updatedAt = now;
+  return true;
+}
+
 function revealIfReady(room: WordSyncRoom) {
   if (room.phase !== 'playing' || room.players.length < 2) return;
   if (!room.players.every(player => Object.hasOwn(room.answers, player.id))) return;
@@ -66,15 +76,18 @@ function revealIfReady(room: WordSyncRoom) {
   const win = results.every(result => result.word === results[0].word);
   room.history.push({ round: room.round, results, win });
   room.answers = {};
-  room.phase = win ? 'won' : 'revealed';
+  if (win) room.phase = 'won';
+  else room.round++;
 }
 
-function leaveRoom(room: WordSyncRoom, player: Player) {
+function leaveRoom(room: WordSyncRoom, player: Player, now: number) {
   room.players = room.players.filter(member => member.id !== player.id);
   delete room.answers[player.id];
   if (room.hostId === player.id) room.hostId = room.players[0]?.id ?? '';
 
-  if (room.players.length < 2 && (room.phase === 'playing' || room.phase === 'revealed')) {
+  if (resumeRevealedRound(room, now)) return;
+
+  if (room.players.length < 2 && room.phase === 'playing') {
     // Retire this round number so an in-flight answer cannot land in the replacement round.
     room.round++;
     room.phase = 'lobby';
@@ -86,9 +99,10 @@ function leaveRoom(room: WordSyncRoom, player: Player) {
 
 export function transition(room: WordSyncRoom, account: WordSyncAccount, payload: WordSyncAction, now: number): boolean {
   const player = findPlayer(room, account);
+  const resumed = player && payload.action !== 'leave' ? resumeRevealedRound(room, now) : false;
 
   if (payload.action === 'join') {
-    if (player) return false;
+    if (player) return resumed;
     if (room.phase !== 'lobby') throw new WordSyncError(409, '游戏已开始，暂时无法加入');
     if (room.players.length >= 12) throw new WordSyncError(409, '房间已满');
     room.players.push({ id: `p${room.nextPlayerId++}`, accountId: String(account.id), name: account.username });
@@ -122,12 +136,11 @@ export function transition(room: WordSyncRoom, account: WordSyncAccount, payload
     }
     case 'next':
       requireHost(room, player);
-      if (room.phase !== 'revealed' || payload.round !== room.round) throw new WordSyncError(409, '当前无法开始下一回合');
-      room.round++;
-      room.phase = 'playing';
-      break;
+      // A cached client may still send the old confirmation. Return the new round without advancing again.
+      if (room.phase === 'playing' && payload.round === room.round - 1 && room.history.at(-1)?.round === payload.round) return resumed;
+      throw new WordSyncError(409, '回合已自动推进，请查看最新房间状态');
     case 'leave':
-      leaveRoom(room, player);
+      leaveRoom(room, player, now);
       break;
     default:
       throw new WordSyncError(400, '不支持的房间操作');

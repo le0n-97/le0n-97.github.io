@@ -12,7 +12,7 @@ function act(room, user, action, fields = {}) {
   return transition(room, user, { action, ...fields }, room.updatedAt + 1);
 }
 
-test('room authority, answer privacy, revealed history and matching', () => {
+test('mismatched words reveal the round and start the next round automatically', () => {
   const room = makeRoom();
   assert.throws(() => act(room, host, 'start'), { status: 409 });
   assert.throws(() => publicRoom(room, outsider), { status: 403 });
@@ -32,22 +32,26 @@ test('room authority, answer privacy, revealed history and matching', () => {
   assert.throws(() => act(room, guest, 'submit', { round: 1, word: '   ' }), { status: 400 });
 
   act(room, guest, 'submit', { round: 1, word: '香蕉' });
-  assert.equal(publicRoom(room, host).phase, 'revealed');
-  assert.deepEqual(publicRoom(room, guest).history[0], {
+  const nextRound = publicRoom(room, host);
+  assert.equal(nextRound.phase, 'playing');
+  assert.equal(nextRound.round, 2);
+  assert.deepEqual(nextRound.players.map(player => player.submitted), [false, false]);
+  assert.deepEqual(nextRound.history[0], {
     round: 1,
     results: [{ name: host.username, word: '苹果' }, { name: guest.username, word: '香蕉' }],
     win: false,
   });
   assert.throws(() => act(room, guest, 'next', { round: 1 }), { status: 403 });
   assert.throws(() => act(room, host, 'next', { round: 0 }), { status: 409 });
-  act(room, host, 'next', { round: 1 });
-  assert.equal(publicRoom(room, guest).history.length, 1);
+  assert.equal(act(room, host, 'next', { round: 1 }), false);
+  assert.deepEqual(publicRoom(room, host), nextRound);
   assert.throws(() => act(room, guest, 'submit', { round: 1, word: '旧答案' }), { status: 409 });
 
   act(room, host, 'submit', { round: 2, word: '晴天' });
   act(room, guest, 'submit', { round: 2, word: '晴天' });
   const won = publicRoom(room, guest);
   assert.equal(won.phase, 'won');
+  assert.equal(won.round, 2);
   assert.equal(won.history.length, 2);
   assert.equal(won.history[1].win, true);
   assert.throws(() => act(room, host, 'next', { round: 2 }), { status: 409 });

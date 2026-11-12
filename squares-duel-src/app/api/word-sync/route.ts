@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers';
 import { requireAccount } from '@/lib/accounts';
 import { apiHeaders, apiOptions, isTrustedApiOrigin } from '@/lib/api-cors';
 import { GameError } from '@/lib/game';
-import { createRoom, publicRoom, transition, WordSyncError, type WordSyncAction, type WordSyncRoom } from '@/lib/word-sync';
+import { createRoom, publicRoom, resumeRevealedRound, transition, WordSyncError, type WordSyncAction, type WordSyncRoom } from '@/lib/word-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +69,15 @@ function readRoom(db: D1DatabaseSession, code: string) {
   return db.prepare('SELECT id, state, revision FROM word_sync_rooms WHERE code = ?').bind(code).first<RoomRow>();
 }
 
+async function saveRoom(db: D1DatabaseSession, row: RoomRow, room: WordSyncRoom) {
+  // Store the new state only if nobody else has changed this room since our read.
+  const write = room.players.length
+    ? db.prepare('UPDATE word_sync_rooms SET state = ?, revision = revision + 1 WHERE id = ? AND revision = ?')
+        .bind(JSON.stringify(room), row.id, row.revision)
+    : db.prepare('DELETE FROM word_sync_rooms WHERE id = ? AND revision = ?').bind(row.id, row.revision);
+  return (await write.run()).meta.changes === 1;
+}
+
 export function OPTIONS(request: Request) { return apiOptions(request, true); }
 
 export async function GET(request: Request) {
@@ -76,9 +85,20 @@ export async function GET(request: Request) {
     checkOrigin(request);
     const db = database();
     const account = await requireAccount(request, db);
-    const row = await readRoom(db, codeOf(new URL(request.url).searchParams.get('code')));
-    if (!row) throw new WordSyncError(404, '没有找到这个房间，请核对房间码。');
-    return json(request, { room: publicRoom(JSON.parse(row.state) as WordSyncRoom, account), revision: row.revision });
+    const code = codeOf(new URL(request.url).searchParams.get('code'));
+    let roomId: string | undefined;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const row = await readRoom(db, code);
+      if (!row || (roomId && row.id !== roomId)) {
+        throw new WordSyncError(404, '没有找到这个房间，请核对房间码。');
+      }
+      roomId = row.id;
+      const room = JSON.parse(row.state) as WordSyncRoom;
+      const snapshot = publicRoom(room, account);
+      if (!resumeRevealedRound(room, Date.now())) return json(request, { room: snapshot, revision: row.revision });
+      if (await saveRoom(db, row, room)) return json(request, { room: publicRoom(room, account), revision: row.revision + 1 });
+    }
+    throw new WordSyncError(409, '房间正在同步，请重试。');
   } catch (error) { return handleError(request, error); }
 }
 
@@ -114,14 +134,7 @@ export async function POST(request: Request) {
       roomId = row.id;
       const room = JSON.parse(row.state) as WordSyncRoom;
       const changed = transition(room, account, payload, Date.now());
-      if (changed) {
-        // Store each transition only if nobody else has changed this room since our read.
-        const write = room.players.length
-          ? db.prepare('UPDATE word_sync_rooms SET state = ?, revision = revision + 1 WHERE id = ? AND revision = ?')
-              .bind(JSON.stringify(room), row.id, row.revision)
-          : db.prepare('DELETE FROM word_sync_rooms WHERE id = ? AND revision = ?').bind(row.id, row.revision);
-        if ((await write.run()).meta.changes !== 1) continue;
-      }
+      if (changed && !await saveRoom(db, row, room)) continue;
       if (action === 'leave') return json(request, { room: null });
       return json(request, { room: publicRoom(room, account), revision: row.revision + Number(changed) });
     }
