@@ -43,6 +43,13 @@
       "when": 1792659661949,
       "tag": "0005_mute_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794456000000,
+      "tag": "0006_word_sync_rooms",
+      "breakpoints": true
     }
   ]
 }

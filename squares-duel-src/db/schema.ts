@@ -74,3 +74,9 @@ export const ratingChanges = sqliteTable('rating_changes', {
   deltaMilli: integer('delta_milli').notNull(),
   afterMilli: integer('after_milli').notNull(),
 }, table => [primaryKey({ columns: [table.roundId, table.accountId] }), index('rating_changes_account_idx').on(table.accountId)]);
+export const wordSyncRooms = sqliteTable('word_sync_rooms', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull(),
+  state: text('state').notNull(),
+  revision: integer('revision').notNull().default(0),
+}, table => [uniqueIndex('word_sync_rooms_code_idx').on(table.code)]);

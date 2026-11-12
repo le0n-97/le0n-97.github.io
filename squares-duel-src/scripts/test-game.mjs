@@ -13,6 +13,7 @@ for (const [source, target] of [
   ['lib/board-generator.ts', 'board-generator.mjs'],
   ['lib/word-routes.ts', 'word-routes.mjs'],
   ['lib/game.ts', 'game.mjs'],
+  ['lib/word-sync.ts', 'word-sync.mjs'],
   ['lib/game-records.ts', 'game-records.mjs'],
   ['lib/records-admin.ts', 'records-admin.mjs'],
   ['lib/chat.ts', 'chat.mjs'],
@@ -30,6 +31,7 @@ for (const [source, target] of [
   ['lib/action-queue.ts', 'action-queue.mjs'],
   ['lib/board-rotation.ts', 'board-rotation.mjs'],
   ['app/api/game/route.ts', 'route.mjs'],
+  ['app/api/word-sync/route.ts', 'word-sync-route.mjs'],
   ['app/api/admin/records/route.ts', 'records-route.mjs'],
   ['app/api/chat/route.ts', 'chat-route.mjs'],
   ['app/api/account/route.ts', 'account-route.mjs'],
@@ -56,6 +58,7 @@ await writeFile(path.join(runtime, 'api-env.mjs'), 'export const env = { get DB(
 const result = spawnSync(process.execPath, [
   '--test', '--test-concurrency=1',
   'tests/pages-site.test.mjs',
+  'tests/word-sync.test.mjs', 'tests/word-sync-api.test.mjs',
   'tests/game.test.mjs', 'tests/api.test.mjs', 'tests/accounts.test.mjs', 'tests/account-request.test.mjs', 'tests/rating.test.mjs', 'tests/rating-api.test.mjs', 'tests/leaderboard.test.mjs', 'tests/pages-cors.test.mjs', 'tests/teams.test.mjs', 'tests/records.test.mjs', 'tests/chat.test.mjs', 'tests/generation.test.mjs', 'tests/word-routes.test.mjs', 'tests/drag-selection.test.mjs', 'tests/client-interactions.test.mjs',
 ], {
   cwd: root,
