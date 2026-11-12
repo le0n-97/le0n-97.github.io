@@ -130,6 +130,9 @@ export function transition(room: WordSyncRoom, account: WordSyncAccount, payload
         if (room.answers[player.id] === word) return false;
         throw new WordSyncError(409, '你已经提交了本回合的答案');
       }
+      if (room.history.some(round => round.results.some(result => result.word === word))) {
+        throw new WordSyncError(409, '这个词在之前的回合已经用过了，请换一个。');
+      }
       room.answers[player.id] = word;
       revealIfReady(room);
       break;

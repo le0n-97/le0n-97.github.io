@@ -91,6 +91,10 @@ test('existing Squares account sessions control server rooms and simultaneous su
     assert.deepEqual(nextRound.room.history[0].results.map(result => result.word), ['苹果', '梨']);
     assert.deepEqual(nextRound.room.players.map(player => player.submitted), [false, false]);
     assert.equal((await post(guest.token, 'submit', { round: 1, word: '迟到的答案' })).status, 409);
+    const repeat = await post(guest.token, 'submit', { round: 2, word: ' 苹果 ' });
+    assert.equal(repeat.status, 409);
+    assert.match((await repeat.json()).error, /之前的回合已经用过了/);
+    assert.deepEqual(await (await get(guest.token)).json(), nextRound);
 
     db.syncWordSyncReads();
     const submits = await Promise.all([host, guest].map(account => post(account.token, 'submit', { round: 2, word: '晴天' })));

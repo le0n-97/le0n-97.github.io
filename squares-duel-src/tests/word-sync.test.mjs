@@ -73,6 +73,34 @@ test('explicit departures transfer ownership and resolve the remaining players',
   assert.throws(() => publicRoom(room, host), { status: 403 });
 });
 
+test('revealed words cannot be reused in this room, while a new same-round match can win', () => {
+  const room = makeRoom();
+  act(room, guest, 'join');
+  act(room, host, 'start');
+  act(room, host, 'submit', { round: 1, word: '苹果' });
+  act(room, guest, 'submit', { round: 1, word: '香蕉' });
+  act(room, host, 'submit', { round: 2, word: '橘子' });
+  act(room, guest, 'submit', { round: 2, word: '梨' });
+
+  const beforeRepeat = publicRoom(room, host);
+  assert.throws(() => act(room, host, 'submit', { round: 3, word: ' 香蕉 ' }), {
+    status: 409,
+    message: /之前的回合已经用过了/,
+  });
+  assert.deepEqual(publicRoom(room, host), beforeRepeat);
+  assert.deepEqual(room.answers, {});
+
+  assert.equal(act(room, host, 'submit', { round: 3, word: '晴天' }), true);
+  assert.equal(act(room, host, 'submit', { round: 3, word: ' 晴天 ' }), false);
+  assert.equal(act(room, guest, 'submit', { round: 3, word: '晴天' }), true);
+  assert.equal(publicRoom(room, host).phase, 'won');
+
+  const anotherRoom = createRoom('ABC234', host, 0);
+  act(anotherRoom, guest, 'join');
+  act(anotherRoom, host, 'start');
+  assert.equal(act(anotherRoom, host, 'submit', { round: 1, word: '香蕉' }), true);
+});
+
 test('an interrupted round with only one player reopens the room', () => {
   const room = makeRoom();
   act(room, guest, 'join');

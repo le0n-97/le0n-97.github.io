@@ -194,6 +194,13 @@ test('joins an invite with a Squares account and shows the next round to both pl
   }
   assert.notEqual(ui.$('answer'), input);
 
+  ui.$('answer').value = ' 苹果 ';
+  ui.$('answerForm').onsubmit(submit);
+  await turn();
+  assert.equal(actions.length, 3);
+  assert.match(ui.$('toast').textContent, /之前的回合已经用过/);
+  assert.equal(ui.$('answer').value, ' 苹果 ');
+
   ui.$('leave').onclick();
   await turn();
   assert.deepEqual(actions.at(-1), { action: 'leave', code: room.code });

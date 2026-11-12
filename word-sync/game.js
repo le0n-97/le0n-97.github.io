@@ -443,13 +443,20 @@ function renderStage(host, submitted) {
       if (submitted) {
         stage.innerHTML = '<h2>答案已收好</h2><p>等待其他朋友提交。</p>';
       } else {
-        stage.innerHTML = '<h2>此刻，你想到什么词？</h2><p>提交后本回合无法修改。</p>' +
+        stage.innerHTML = '<h2>此刻，你想到什么词？</h2><p>之前回合用过的词不能再用，提交后不能修改。</p>' +
           '<form id="answerForm" class="answer-row"><input id="answer" aria-label="你的词语" maxlength="30" placeholder="写一个词语…" autocomplete="off" required>' +
           '<button id="submitWord" class="primary" type="submit">提交答案 ↗</button></form>';
         $('answerForm').onsubmit = event => {
           event.preventDefault();
-          const word = $('answer').value.trim();
-          if (word) void changeRoom('submit', { word, round: room.round });
+          const answer = $('answer');
+          const word = answer.value.trim();
+          if (!word) return;
+          if (room.history.some(result => result.results.some(entry => entry.word === word))) {
+            toast('这个词在之前的回合已经用过了，请换一个。');
+            answer.focus();
+            return;
+          }
+          void changeRoom('submit', { word, round: room.round });
         };
       }
       break;
