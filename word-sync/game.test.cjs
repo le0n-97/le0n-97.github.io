@@ -1,0 +1,22 @@
+const assert = require('node:assert/strict');
+const Game = require('./game.js');
+const g = new Game('a','甲');
+assert.equal(g.start(),false);
+assert.equal(g.add('b','乙'),true);
+assert.equal(g.start(),true);
+assert.equal(g.add('c','丙'),false);
+assert.equal(g.submit('a',' 苹果 '),true);
+assert.equal(JSON.stringify(g.publicState()).includes('苹果'),false);
+assert.equal(g.submit('a','香蕉'),false);
+assert.equal(g.submit('b','香蕉'),true);
+assert.equal(g.phase,'revealed');
+assert.deepEqual(g.history[0].results.map(x=>x.word),['苹果','香蕉']);
+assert.equal(g.next(),true);
+assert.equal(g.round,2);
+g.submit('a','苹果');g.submit('b','苹果');
+assert.equal(g.phase,'won');assert.equal(g.next(),false);
+const h=new Game('a','甲');h.add('b','乙');h.add('c','丙');h.start();h.submit('a','同');h.submit('b','同');h.remove('c');assert.equal(h.phase,'won');
+const i=new Game('a','甲');i.add('b','乙');i.start();i.submit('a','秘密');i.remove('b');assert.equal(i.phase,'lobby');assert.equal(JSON.stringify(i.publicState()).includes('秘密'),false);i.add('c','丙');assert.equal(i.start(),true);
+console.log('Game state tests passed');
+const j=new Game('a','甲');j.add('b','乙');j.start();j.submit('a','一');j.submit('b','二');j.remove('b');assert.equal(j.phase,'lobby');assert.equal(j.history.length,1);j.add('c','丙');assert.equal(j.start(),true);assert.equal(j.round,2);
+
