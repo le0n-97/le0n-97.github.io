@@ -251,8 +251,6 @@ function renderControls() {
   $('leave').disabled = roomBusy || authBusy;
   const start = $('start');
   if (start) start.disabled = roomBusy || room.players.length < 2;
-  const next = $('next');
-  if (next) next.disabled = roomBusy || room.players.length < 2;
   const submit = $('submitWord');
   if (submit) submit.disabled = roomBusy;
 }
@@ -407,7 +405,7 @@ function renderRoom() {
       '</span><span class="tag">' + [role, progress].filter(Boolean).join(' · ') + '</span></div>';
   }).join('');
 
-  const showHostControls = host && (room.phase === 'lobby' || room.phase === 'revealed');
+  const showHostControls = host && room.phase === 'lobby';
   const stageVersion = [room.phase, room.round, showHostControls, me?.submitted].join(':');
   // Keep the input in the DOM while other players submit, including during IME composition.
   if (stageKey !== stageVersion) {
@@ -437,8 +435,11 @@ function renderStage(host, submitted) {
         (host ? '<button class="primary" id="start" type="button">开始游戏 <span>↗</span></button>' : '<p>等待房主开始游戏…</p>');
       if (host) $('start').onclick = () => void changeRoom('start');
       break;
-    case 'playing':
-      status.textContent = '所有人提交后一起揭晓。';
+    case 'playing': {
+      const previous = room.history.at(-1);
+      status.textContent = previous?.round === room.round - 1 && !previous.win
+        ? '上一回合答案不同，已自动进入下一回合。'
+        : '所有人提交后一起揭晓。';
       if (submitted) {
         stage.innerHTML = '<h2>答案已收好</h2><p>等待其他朋友提交。</p>';
       } else {
@@ -452,11 +453,10 @@ function renderStage(host, submitted) {
         };
       }
       break;
+    }
     case 'revealed':
       status.textContent = '答案已揭晓。';
-      stage.innerHTML = '<h2>还差一点默契</h2><p>看看彼此的答案，再试一次吧。</p>' +
-        (host ? '<button id="next" class="primary" type="button">开始下一回合 <span>↗</span></button>' : '<p>等待房主开始下一回合…</p>');
-      if (host) $('next').onclick = () => void changeRoom('next', { round: room.round });
+      stage.innerHTML = '<p>正在同步下一回合…</p>';
       break;
     case 'won':
       title.textContent = '心有灵犀！';

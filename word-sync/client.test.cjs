@@ -102,31 +102,40 @@ const room = {
   history: []
 };
 
-test('reuses the Squares account, joins only from an invite, and keeps a draft as other players submit', async () => {
+test('joins an invite with a Squares account and shows the next round to both players automatically', async () => {
   const storage = new Map([[accountKey, JSON.stringify(session)]]);
+  const hostSession = { ...session, user: { ...session.user, username: 'host_user' }, token: 'sq_account_' + 'b'.repeat(64) };
+  const hostStorage = new Map([[accountKey, JSON.stringify(hostSession)]]);
   let member = false;
   let revision = 1;
   let snapshot = room;
   const actions = [];
   const api = (url, options) => {
-    assert.equal(options.headers.Authorization, 'Bearer ' + session.token);
+    const isHost = options.headers.Authorization === 'Bearer ' + hostSession.token;
+    const signedIn = isHost ? hostSession : session;
+    assert.equal(options.headers.Authorization, 'Bearer ' + signedIn.token);
+    const view = () => ({ data: { room: { ...snapshot, meId: isHost ? 'host' : 'guest' }, revision } });
     if (url.pathname === '/api/account') {
       assert.equal(options.method, 'GET');
-      return { data: { user: session.user } };
+      return { data: { user: signedIn.user } };
     }
     assert.equal(url.pathname, '/api/word-sync');
     if (options.method === 'GET') {
       assert.equal(url.searchParams.get('code'), room.code);
-      return member ? { data: { room: snapshot, revision } } : { status: 404, data: { error: '未加入' } };
+      return isHost || member ? view() : { status: 404, data: { error: '未加入' } };
     }
     const body = JSON.parse(options.body);
     actions.push(body);
     if (body.action === 'join') member = true;
-    if (body.action === 'submit') {
+    if (body.action === 'submit' && isHost) {
+      revision++;
+      snapshot = { ...snapshot, players: [{ ...room.players[0], submitted: true }, room.players[1]] };
+    } else if (body.action === 'submit') {
       revision++;
       snapshot = {
         ...snapshot,
-        phase: 'revealed',
+        round: 2,
+        players: room.players,
         history: [{ round: 1, results: [{ name: 'host_user', word: '苹果' }, { name: session.user.username, word: body.word }], win: false }]
       };
     }
@@ -134,7 +143,7 @@ test('reuses the Squares account, joins only from an invite, and keeps a draft a
       member = false;
       return { data: { room: null } };
     }
-    return { data: { room: snapshot, revision } };
+    return view();
   };
   const ui = client('https://le0n-97.github.io/word-sync/?room=ab23cd', api, storage);
 
@@ -157,18 +166,33 @@ test('reuses the Squares account, joins only from an invite, and keeps a draft a
 
   snapshot = { ...room, phase: 'playing' };
   revision++;
+  const host = client(ui.location().href, api, hostStorage);
+  await turn();
   await ui.poll();
   const input = ui.$('answer');
   input.value = '香蕉';
-  snapshot = { ...snapshot, players: [{ ...room.players[0], submitted: true }, room.players[1]] };
-  revision++;
+  host.$('answer').value = '苹果';
+  host.$('answerForm').onsubmit(submit);
+  await turn();
   await ui.poll();
   assert.equal(ui.$('answer'), input);
   assert.equal(input.value, '香蕉');
+  assert.doesNotMatch(ui.$('history').innerHTML, /苹果/);
   ui.$('answerForm').onsubmit(submit);
   await turn();
-  assert.deepEqual(actions.at(-1), { action: 'submit', code: room.code, round: 1, word: '香蕉' });
-  assert.match(ui.$('history').innerHTML, /苹果.*香蕉/);
+  await host.poll();
+  assert.deepEqual(actions, [
+    { action: 'join', code: room.code },
+    { action: 'submit', code: room.code, round: 1, word: '苹果' },
+    { action: 'submit', code: room.code, round: 1, word: '香蕉' }
+  ]);
+  for (const player of [ui, host]) {
+    assert.equal(player.$('roomTitle').textContent, '第 2 回合');
+    assert.equal(player.$('answer').value, '');
+    assert.equal(player.$('next'), undefined);
+    assert.match(player.$('history').innerHTML, /苹果.*香蕉/);
+  }
+  assert.notEqual(ui.$('answer'), input);
 
   ui.$('leave').onclick();
   await turn();
