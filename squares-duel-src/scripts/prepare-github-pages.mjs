@@ -8,7 +8,7 @@ const source = path.join(root, 'dist-pages');
 const repository = 'le0n-97/le0n-97.github.io';
 const repositoryDirectory = 'squares-duel';
 const targetUrl = 'https://le0n-97.github.io/squares-duel/';
-const apiOrigin = 'https://squares-duel-oct15.sacred-rhea-9950.chatgpt.site';
+const apiOrigin = 'https://squares-duel-oct15.not-n0el.chatgpt.site';
 const index = await readFile(path.join(source, 'index.html'), 'utf8');
 if (!index.includes('/squares-duel/assets/') || !index.includes('/squares-duel/favicon.svg')) {
   throw new Error('Build the production Pages configuration before exporting.');

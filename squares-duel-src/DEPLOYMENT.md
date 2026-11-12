@@ -28,7 +28,7 @@ npm run dev
 GitHub 保存完整后端源码，并在 CI 中编译。GitHub Pages 负责网页，现有 API、账号和 Rating 数据库继续运行在 Sites：
 
 - 项目 ID：`appgprj_6ad0c266c7d481918d80df8286bcbe8c`
-- API：https://squares-duel-oct15.sacred-rhea-9950.chatgpt.site/api/
+- API：https://squares-duel-oct15.not-n0el.chatgpt.site/api/
 - 原站非 API 页面保持关闭。
 
 当前 Sites 发布通过已连接的 Sites 工具完成。GitHub 的 `GITHUB_TOKEN` 不是 Sites 的部署凭证，因此 CI 不会自动替换线上后端或数据库。

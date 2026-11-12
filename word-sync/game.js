@@ -1,32 +1,500 @@
-// The host keeps unrevealed answers private; clients receive only submission status.
-class Game {
-  constructor(hostId, name) { this.hostId=hostId; this.players=[{id:hostId,name}]; this.phase='lobby'; this.round=1; this.history=[]; this.answers={}; }
-  add(id,name) { if(this.phase!=='lobby'||this.players.length>=12||this.players.some(p=>p.id===id)) return false; this.players.push({id,name}); return true; }
-  start() { if(this.phase!=='lobby'||this.players.length<2) return false; if(this.history.length && this.round<=this.history[this.history.length-1].round) this.round=this.history[this.history.length-1].round+1; this.phase='playing'; return true; }
-  submit(id,word) { if(this.phase!=='playing'||!this.players.some(p=>p.id===id)||Object.hasOwn(this.answers,id)||typeof word!=='string'||!word.trim()||word.trim().length>30) return false; this.answers[id]=word.trim(); this.check(); return true; }
-  check() { if(this.phase!=='playing'||this.players.length<2||!this.players.every(p=>Object.hasOwn(this.answers,p.id))) return; const results=this.players.map(p=>({name:p.name,word:this.answers[p.id]})); const win=results.every(r=>r.word===results[0].word); this.history.push({round:this.round,results,win}); this.answers={}; this.phase=win?'won':'revealed'; }
-  next() { if(this.phase!=='revealed'||this.players.length<2) return false; this.round++; this.phase='playing'; return true; }
-  remove(id) { this.players=this.players.filter(p=>p.id!==id); delete this.answers[id]; if((this.phase==='playing'||this.phase==='revealed')&&this.players.length<2){ this.answers={}; this.phase='lobby'; } else this.check(); }
-  publicState() { return {hostId:this.hostId,players:this.players.map(p=>({...p,submitted:Object.hasOwn(this.answers,p.id)})),phase:this.phase,round:this.round,history:this.history}; }
+'use strict';
+
+const API_ORIGIN = 'https://squares-duel-oct15.not-n0el.chatgpt.site';
+const ACCOUNT_KEY = 'squares-duel-account';
+const ACCOUNT_TOKEN = /^sq_account_[0-9a-f]{64}$/;
+const ROOM_CODE = /^[A-HJ-NP-Z2-9]{6}$/;
+const POLL_INTERVAL = 1250;
+
+const $ = id => document.getElementById(id);
+const query = new URLSearchParams(window.location.search);
+const inviteEntry = query.has('room');
+let account = null;
+let accountGeneration = 0;
+let authBusy = true;
+let accountChecked = false;
+let authMode = 'login';
+let accountError = '';
+let canRetryAccount = false;
+let room = null;
+let roomRevision = -1;
+let roomGeneration = 0;
+let roomBusy = false;
+let stageKey = '';
+let roomCodeToRestore = (query.get('room') ?? '').trim().toUpperCase();
+let pollingTimer;
+let toastTimer;
+
+function hide(id, hidden) {
+  $(id).classList.toggle('hidden', hidden);
 }
-if(typeof module!=='undefined') module.exports=Game;
-if(typeof window!=='undefined') {
-const $=id=>document.getElementById(id); let peer, conn, game, myId, code, host=false, state, connections=new Map(), submitting=false, joinTimer;
-const cleanName=s=>s.trim().slice(0,16), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let timer; function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(timer);timer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
-function validName(){const n=cleanName($('name').value);if(!n){toast('请先填写昵称');$('name').focus();return null}return n}
-function setBusy(v){$('create').disabled=v;$('join').disabled=v;$('join').textContent=v?'正在连接…':'加入 →'}
-function broadcast(){state=game.publicState(); for(const c of connections.values()) if(c.open) c.send({type:'state',state}); render()}
-function showRoom(){ $('home').classList.add('hidden');$('room').classList.remove('hidden');$('codeLabel').textContent=code; }
-function reset(message){clearTimeout(joinTimer);joinTimer=null;if(peer){const oldPeer=peer;peer=null;oldPeer.destroy()}conn=null;game=null;connections=new Map();state=null;host=false;submitting=false;setBusy(false);$('room').classList.add('hidden');$('home').classList.remove('hidden');if(message)toast(message)}
-function bindHost(c){const session=peer;let joined=false;let timeout;c.on('open',()=>{if(!joined)timeout=setTimeout(()=>{if(!joined)c.close()},10000)});c.on('data',data=>{if(peer!==session||!data||typeof data!=='object')return;if(!joined){if(data.type!=='join'||typeof data.name!=='string'||!cleanName(data.name)||!game.add(c.peer,cleanName(data.name))){c.send({type:'error',message:'房间已开始、已满或昵称无效'});setTimeout(()=>c.close(),300);return}joined=true;clearTimeout(timeout);connections.set(c.peer,c);broadcast();return}if(data.type==='submit'&&game.submit(c.peer,data.word))broadcast()});c.on('close',()=>{clearTimeout(timeout);if(joined&&peer===session&&game){connections.delete(c.peer);game.remove(c.peer);broadcast();toast('有玩家离开了房间')}});c.on('error',()=>c.close())}
-$('create').onclick=()=>{const name=validName();if(!name)return;if(!window.Peer){toast('连接服务加载失败，请刷新后重试');return}setBusy(true);code=Array.from(crypto.getRandomValues(new Uint8Array(6)),x=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[x%32]).join('');host=true;peer=new Peer('word-sync-'+code,{debug:0});const session=peer;peer.on('open',id=>{if(peer!==session)return;if(game){toast('连接服务已恢复');return}myId=id;game=new Game(id,name);showRoom();broadcast()});peer.on('connection',c=>{if(peer===session)bindHost(c);else c.close()});peer.on('disconnected',()=>{if(peer!==session)return;toast('连接服务暂时断开，正在尝试恢复');if(peer&&!peer.destroyed)peer.reconnect()});peer.on('error',e=>{if(peer!==session)return;if(!game)reset('创建房间失败，请检查网络后重试');else toast('网络连接出现问题，请检查网络')})};
-$('join').onclick=()=>{const name=validName();if(!name)return;code=$('roomCode').value.trim().toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code)){toast('请输入 6 位房间码');return}if(!window.Peer){toast('连接服务加载失败，请刷新后重试');return}setBusy(true);toast('正在连接房主，请稍候…');peer=new Peer();const session=peer;let connected=false;joinTimer=setTimeout(()=>{if(peer===session&&!connected)reset('连接超时，请确认房主仍在房间中，或切换网络后重试')},30000);peer.on('open',id=>{if(peer!==session)return;myId=id;conn=peer.connect('word-sync-'+code,{reliable:true});conn.on('open',()=>{if(peer===session)conn.send({type:'join',name})});conn.on('data',data=>{if(peer!==session||!data||typeof data!=='object')return;if(data.type==='error'){reset(data.message);return}if(data.type==='state'){connected=true;clearTimeout(joinTimer);joinTimer=null;state=data.state;submitting=false;showRoom();render()}});conn.on('close',()=>{if(peer!==session)return;reset(connected?'与房主的连接已断开，房间已结束':'无法加入房间，请检查房间码和网络')});conn.on('error',()=>{if(peer===session)reset('连接失败，请检查网络后重试')})});peer.on('error',()=>{if(peer===session)reset('无法连接房间，请检查房间码和网络')});};
-$('leave').onclick=()=>reset('已离开房间');$('copy').onclick=async()=>{const u=new URL(location.href);u.search='?room='+code;try{await navigator.clipboard.writeText(u.toString());toast('邀请链接已复制')}catch{toast('请把房间码 '+code+' 发给朋友')}};
-function render(){if(!state)return;const oldAnswer=$('answer');const draft=oldAnswer?.value||'';const focused=!!oldAnswer&&document.activeElement===oldAnswer;const selection=focused?[oldAnswer.selectionStart,oldAnswer.selectionEnd]:null;const me=state.players.find(p=>p.id===myId);const n=state.players.length;const phase=state.phase;$('playerCount').textContent=n;$('players').innerHTML=state.players.map(p=>`<div class="player"><span class="avatar">${esc(p.name.slice(0,1))}</span><span>${esc(p.name)}${p.id===myId?'（你）':''}</span><span class="tag">${p.id===state.hostId?'房主':phase==='playing'?(p.submitted?'已提交':'思考中'):''}</span></div>`).join('');$('roomTitle').textContent=phase==='lobby'?'等待朋友加入':phase==='won'?'心有灵犀！':`第 ${state.round} 回合`;$('status').textContent=phase==='lobby'?'分享房间码，等朋友到齐后开始。':phase==='won'?'你们写下了同一个词，游戏完成！':phase==='revealed'?'答案已揭晓，准备好再来一回合。':'独立写下一个词，所有人提交后一起揭晓。';let html='';if(phase==='lobby'){html=`<span class="eyebrow">READY WHEN YOU ARE</span><h2>人到齐了吗？</h2><p>至少两位玩家才能开始。游戏开始后，新的朋友暂时无法加入。</p>${host?`<button class="primary" id="start" ${n<2?'disabled':''}>开始游戏 <span>↗</span></button>`:'<p>等待房主开始游戏…</p>'}`;}else if(phase==='playing'){html=me?.submitted?'<span class="eyebrow">ANSWER SENT ✓</span><h2>答案已收好</h2><p>等待其他朋友完成，揭晓之前答案不会显示给其他玩家。</p>':`<span class="eyebrow">ROUND ${String(state.round).padStart(2,'0')} · YOUR TURN</span><h2>此刻，你想到什么词？</h2><p>写下你的答案，凭直觉就好。提交后本回合无法修改。</p><form id="answerForm" class="answer-row"><input id="answer" maxlength="30" placeholder="写一个词语…" autocomplete="off" required><button class="primary" ${submitting?'disabled':''}>提交答案 ↗</button></form>`;}else if(phase==='revealed'){html=`<span class="eyebrow">ROUND COMPLETE</span><h2>还差一点默契</h2><p>看看彼此的答案，再试一次吧。</p>${host?'<button id="next" class="primary">开始下一回合 <span>↗</span></button>':'<p>等待房主开始下一回合…</p>'}`;}else{html='<span class="eyebrow">A PERFECT MATCH ✳</span><h2>你们想到一起去了！</h2><p>所有人的词语都一样，恭喜完成游戏。</p>'}$('stage').innerHTML=html;if($('answer')){$('answer').value=draft;if(focused){$('answer').focus();$('answer').setSelectionRange(...selection)}}const start=$('start');if(start)start.onclick=()=>{if(game.start())broadcast()};const next=$('next');if(next)next.onclick=()=>{if(game.next())broadcast()};const form=$('answerForm');if(form)form.onsubmit=e=>{e.preventDefault();const word=$('answer').value.trim();if(!word)return;if(host){if(game.submit(myId,word))broadcast()}else if(conn?.open){submitting=true;conn.send({type:'submit',word});render()}else toast('连接已断开')};$('roundCount').textContent=String(state.history.length).padStart(2,'0');$('history').innerHTML=state.history.length?[...state.history].reverse().map(r=>`<article class="round"><div class="round-title">第 ${r.round} 回合 ${r.win?' · 默契达成 ✳':''}</div><div class="answers">${r.results.map(a=>`<div class="answer"><small>${esc(a.name)}</small>${esc(a.word)}</div>`).join('')}</div></article>`).join(''):'<div class="empty">还没有揭晓的答案，故事即将开始。 ✳</div>';}
-const params=new URLSearchParams(location.search);if(params.has('room')){$('create').classList.add('hidden');$('joinDivider').classList.add('hidden');$('roomCode').value=params.get('room').toUpperCase();}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]
+  );
 }
 
+function toast(message) {
+  $('toast').textContent = message;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 4000);
+}
 
+class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
+async function request(path, { token, body, simple = false } = {}) {
+  const headers = {};
+  if (token) headers.Authorization = 'Bearer ' + token;
+  if (body) headers['Content-Type'] = simple ? 'text/plain;charset=UTF-8' : 'application/json';
+  let response;
+  try {
+    response = await fetch(API_ORIGIN + path, {
+      method: body ? 'POST' : 'GET',
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store',
+      credentials: 'omit',
+      redirect: 'error',
+      signal: AbortSignal.timeout(12000)
+    });
+  } catch (error) {
+    if (error.name === 'TimeoutError') throw new Error('服务器连接超时，请重试。');
+    throw new Error('无法连接服务器，请检查网络后重试。');
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new ApiError(response.status, data.error || '服务器暂时不可用，请稍后重试。');
+  return data;
+}
 
+function readSavedAccount() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ACCOUNT_KEY) ?? 'null');
+    if (ACCOUNT_TOKEN.test(saved?.token) &&
+        typeof saved.user?.username === 'string' &&
+        typeof saved.expiresAt === 'number') {
+      return saved;
+    }
+  } catch { /* Login still works when browser storage is disabled. */ }
+  return null;
+}
+
+function saveAccount(session, previousToken) {
+  try {
+    if (session) localStorage.setItem(ACCOUNT_KEY, JSON.stringify(session));
+    else if (readSavedAccount()?.token === previousToken) localStorage.removeItem(ACCOUNT_KEY);
+  } catch { /* The tab can keep a valid session in memory. */ }
+}
+
+function renderAccount() {
+  hide('authForm', !accountChecked || !!account);
+  hide('lobbyControls', !account);
+  hide('authRetry', !canRetryAccount || authBusy);
+  $('accountName').textContent = account?.user.username ?? '';
+  $('authStatus').textContent = accountError ||
+    (authBusy ? '正在处理账号请求…' : account ? '' : '使用 Squares 双人对决账号登录。');
+  hide('authStatus', !$('authStatus').textContent);
+  $('authSubmit').disabled = authBusy;
+  $('authMode').disabled = authBusy;
+  $('username').disabled = authBusy;
+  $('password').disabled = authBusy;
+  $('confirmPassword').disabled = authBusy;
+  renderControls();
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const register = mode === 'register';
+  $('password').autocomplete = register ? 'new-password' : 'current-password';
+  $('password').value = '';
+  $('confirmPassword').value = '';
+  $('confirmPassword').required = register;
+  hide('confirmRow', !register);
+  $('authSubmit').textContent = register ? '注册并登录' : '登录';
+  $('authMode').textContent = register ? '已有账号？返回登录' : '注册账号';
+}
+
+function authExpired(token) {
+  if (account?.token !== token) return;
+  accountGeneration++;
+  saveAccount(null, token);
+  account = null;
+  accountError = '登录已失效，请重新登录。';
+  authBusy = false;
+  clearRoom(true);
+  renderAccount();
+}
+
+async function restoreAccount() {
+  const generation = ++accountGeneration;
+  const saved = readSavedAccount();
+  authBusy = true;
+  accountError = '';
+  canRetryAccount = false;
+  if (account && account.token !== saved?.token) {
+    account = null;
+    clearRoom(true);
+  }
+  renderAccount();
+  try {
+    if (!saved) return;
+    const { user, expiresAt } = await request('/api/account', { token: saved.token });
+    if (generation !== accountGeneration) return;
+    if (!user) {
+      saveAccount(null, saved.token);
+      return;
+    }
+    account = { user, token: saved.token, expiresAt: expiresAt ?? saved.expiresAt };
+  } catch (error) {
+    if (generation !== accountGeneration) return;
+    if (error.status === 401) saveAccount(null, saved.token);
+    else {
+      accountError = error.message;
+      canRetryAccount = true;
+    }
+  } finally {
+    if (generation === accountGeneration) {
+      authBusy = false;
+      accountChecked = true;
+      renderAccount();
+      if (account) void restoreRoom();
+    }
+  }
+}
+
+$('authForm').onsubmit = async event => {
+  event.preventDefault();
+  if (authBusy || account) return;
+  const username = $('username').value.trim();
+  const password = $('password').value;
+  if (authMode === 'register' && password !== $('confirmPassword').value) {
+    accountError = '两次输入的密码不一致。';
+    renderAccount();
+    return;
+  }
+  const generation = ++accountGeneration;
+  authBusy = true;
+  canRetryAccount = false;
+  accountError = '';
+  renderAccount();
+  try {
+    const data = await request('/api/account', {
+      body: { action: authMode, username, password },
+      simple: true
+    });
+    if (generation !== accountGeneration) return;
+    if (!ACCOUNT_TOKEN.test(data.token) ||
+        typeof data.user?.username !== 'string' ||
+        typeof data.expiresAt !== 'number') {
+      throw new Error('账号服务返回的信息不完整，请重试。');
+    }
+    account = { user: data.user, token: data.token, expiresAt: data.expiresAt };
+    saveAccount(account);
+    setAuthMode('login');
+  } catch (error) {
+    if (generation === accountGeneration) accountError = error.message;
+  } finally {
+    if (generation === accountGeneration) {
+      authBusy = false;
+      renderAccount();
+      if (account) void restoreRoom();
+    }
+  }
+};
+
+$('authMode').onclick = () => {
+  accountError = '';
+  setAuthMode(authMode === 'login' ? 'register' : 'login');
+  renderAccount();
+  $('username').focus();
+};
+
+$('authRetry').onclick = () => void restoreAccount();
+$('logout').onclick = async () => {
+  if (!account || authBusy || roomBusy) return;
+  const token = account.token;
+  const generation = ++accountGeneration;
+  authBusy = true;
+  accountError = '';
+  renderAccount();
+  try {
+    await request('/api/account', { token, body: { action: 'logout' } });
+    if (generation !== accountGeneration) return;
+    saveAccount(null, token);
+    account = null;
+    toast('已退出 Squares 账号。');
+  } catch (error) {
+    if (generation === accountGeneration) accountError = error.message;
+  } finally {
+    if (generation === accountGeneration) {
+      authBusy = false;
+      renderAccount();
+    }
+  }
+};
+
+window.addEventListener('storage', event => {
+  if (event.key !== ACCOUNT_KEY && event.key !== null) return;
+  if (readSavedAccount()?.token !== account?.token || authBusy) void restoreAccount();
+});
+
+function renderControls() {
+  $('create').disabled = roomBusy || authBusy;
+  $('join').disabled = roomBusy || authBusy;
+  $('logout').disabled = roomBusy || authBusy;
+  $('leave').disabled = roomBusy || authBusy;
+  const start = $('start');
+  if (start) start.disabled = roomBusy || room.players.length < 2;
+  const next = $('next');
+  if (next) next.disabled = roomBusy || room.players.length < 2;
+  const submit = $('submitWord');
+  if (submit) submit.disabled = roomBusy;
+}
+
+function setRoomNotice(message = '') {
+  $('roomNotice').textContent = message;
+  hide('roomNotice', !message);
+}
+
+function setUrlRoom(code) {
+  const url = new URL(window.location.href);
+  if (code) url.searchParams.set('room', code);
+  else url.searchParams.delete('room');
+  window.history.replaceState(null, '', url);
+}
+
+function clearRoom(preserveCode = false) {
+  roomGeneration++;
+  clearTimeout(pollingTimer);
+  room = null;
+  roomRevision = -1;
+  roomBusy = false;
+  stageKey = '';
+  $('stage').innerHTML = '';
+  setRoomNotice();
+  if (!preserveCode) {
+    roomCodeToRestore = '';
+    if (!inviteEntry) setUrlRoom('');
+  }
+  hide('room', true);
+  hide('home', false);
+  renderControls();
+}
+
+function applyRoom(data) {
+  if (!data.room || !Number.isSafeInteger(data.revision)) {
+    throw new Error('房间状态无法读取，请重试。');
+  }
+  const isNew = data.room.code !== room?.code;
+  if (!isNew && data.revision <= roomRevision) return;
+  room = data.room;
+  roomRevision = data.revision;
+  if (isNew) {
+    roomGeneration++;
+    roomCodeToRestore = room.code;
+    $('roomCode').value = room.code;
+    $('codeLabel').textContent = room.code;
+    setUrlRoom(room.code);
+    hide('home', true);
+    hide('room', false);
+    schedulePoll();
+  }
+  renderRoom();
+}
+
+function schedulePoll() {
+  clearTimeout(pollingTimer);
+  if (room) pollingTimer = setTimeout(pollRoom, POLL_INTERVAL);
+}
+
+function readRoom(code, token) {
+  return request('/api/word-sync?code=' + encodeURIComponent(code), { token });
+}
+
+async function pollRoom() {
+  if (!room || !account) return;
+  const generation = roomGeneration;
+  const token = account.token;
+  try {
+    if (!roomBusy) {
+      const data = await readRoom(room.code, token);
+      if (generation === roomGeneration && account?.token === token && !roomBusy) {
+        applyRoom(data);
+        setRoomNotice();
+      }
+    }
+  } catch (error) {
+    if (generation !== roomGeneration || account?.token !== token || roomBusy) return;
+    if (error.status === 401) authExpired(token);
+    else if ([403, 404, 410].includes(error.status)) {
+      clearRoom();
+      toast(error.message);
+    } else {
+      setRoomNotice('暂时无法同步房间，正在重试…');
+    }
+  } finally {
+    if (generation === roomGeneration) schedulePoll();
+  }
+}
+
+async function restoreRoom() {
+  if (room || roomBusy || !account || !ROOM_CODE.test(roomCodeToRestore)) return;
+  const token = account.token;
+  const generation = roomGeneration;
+  roomBusy = true;
+  renderControls();
+  try {
+    const data = await readRoom(roomCodeToRestore, token);
+    if (generation === roomGeneration && account?.token === token) applyRoom(data);
+  } catch (error) {
+    if (generation !== roomGeneration || account?.token !== token) return;
+    if (error.status === 401) authExpired(token);
+    else if (![403, 404, 410].includes(error.status)) toast(error.message);
+  } finally {
+    if (account?.token === token) {
+      roomBusy = false;
+      renderControls();
+    }
+  }
+}
+
+async function changeRoom(action, extra = {}) {
+  if (roomBusy || authBusy || !account) return;
+  const token = account.token;
+  const generation = roomGeneration;
+  roomBusy = true;
+  renderControls();
+  try {
+    const data = await request('/api/word-sync', {
+      token,
+      body: { action, ...(room ? { code: room.code } : {}), ...extra }
+    });
+    if (generation !== roomGeneration || account?.token !== token) return;
+    if (action === 'leave') {
+      clearRoom();
+      toast('已离开房间。');
+    } else {
+      applyRoom(data);
+      setRoomNotice();
+    }
+  } catch (error) {
+    if (generation !== roomGeneration || account?.token !== token) return;
+    if (error.status === 401) authExpired(token);
+    else toast(error.message);
+  } finally {
+    if (account?.token === token) {
+      roomBusy = false;
+      renderControls();
+    }
+  }
+}
+
+function renderRoom() {
+  const host = room.meId === room.hostId;
+  const me = room.players.find(player => player.id === room.meId);
+  $('playerCount').textContent = room.players.length;
+  $('players').innerHTML = room.players.map(player => {
+    const role = player.id === room.hostId ? '房主' : '';
+    const progress = room.phase === 'playing' ? (player.submitted ? '已提交' : '思考中') : '';
+    return '<div class="player"><span class="avatar">' + escapeHtml(player.name.slice(0, 1)) +
+      '</span><span>' + escapeHtml(player.name) + (player.id === room.meId ? '（你）' : '') +
+      '</span><span class="tag">' + [role, progress].filter(Boolean).join(' · ') + '</span></div>';
+  }).join('');
+
+  const showHostControls = host && (room.phase === 'lobby' || room.phase === 'revealed');
+  const stageVersion = [room.phase, room.round, showHostControls, me?.submitted].join(':');
+  // Keep the input in the DOM while other players submit, including during IME composition.
+  if (stageKey !== stageVersion) {
+    stageKey = stageVersion;
+    renderStage(host, me?.submitted);
+  }
+  $('roundCount').textContent = String(room.history.length).padStart(2, '0');
+  $('history').innerHTML = room.history.length ? [...room.history].reverse().map(result => {
+    const answers = result.results.map(answer => '<div class="answer"><small>' + escapeHtml(answer.name) +
+      '</small>' + escapeHtml(answer.word) + '</div>').join('');
+    return '<article class="round"><div class="round-title">第 ' + result.round + ' 回合' +
+      (result.win ? ' · 默契达成 ✳' : '') + '</div><div class="answers">' + answers + '</div></article>';
+  }).join('') : '<div class="empty">还没有揭晓的答案。</div>';
+  renderControls();
+}
+
+function renderStage(host, submitted) {
+  const title = $('roomTitle');
+  const status = $('status');
+  const stage = $('stage');
+  title.textContent = '第 ' + room.round + ' 回合';
+  switch (room.phase) {
+    case 'lobby':
+      title.textContent = '等待朋友加入';
+      status.textContent = '至少两位玩家加入后，房主可以开始游戏。';
+      stage.innerHTML = '<h2>人到齐了吗？</h2><p>把邀请链接发给朋友。开局后，已加入的玩家可以用同一账号回来。</p>' +
+        (host ? '<button class="primary" id="start" type="button">开始游戏 <span>↗</span></button>' : '<p>等待房主开始游戏…</p>');
+      if (host) $('start').onclick = () => void changeRoom('start');
+      break;
+    case 'playing':
+      status.textContent = '所有人提交后一起揭晓。';
+      if (submitted) {
+        stage.innerHTML = '<h2>答案已收好</h2><p>等待其他朋友提交。</p>';
+      } else {
+        stage.innerHTML = '<h2>此刻，你想到什么词？</h2><p>提交后本回合无法修改。</p>' +
+          '<form id="answerForm" class="answer-row"><input id="answer" aria-label="你的词语" maxlength="30" placeholder="写一个词语…" autocomplete="off" required>' +
+          '<button id="submitWord" class="primary" type="submit">提交答案 ↗</button></form>';
+        $('answerForm').onsubmit = event => {
+          event.preventDefault();
+          const word = $('answer').value.trim();
+          if (word) void changeRoom('submit', { word, round: room.round });
+        };
+      }
+      break;
+    case 'revealed':
+      status.textContent = '答案已揭晓。';
+      stage.innerHTML = '<h2>还差一点默契</h2><p>看看彼此的答案，再试一次吧。</p>' +
+        (host ? '<button id="next" class="primary" type="button">开始下一回合 <span>↗</span></button>' : '<p>等待房主开始下一回合…</p>');
+      if (host) $('next').onclick = () => void changeRoom('next', { round: room.round });
+      break;
+    case 'won':
+      title.textContent = '心有灵犀！';
+      status.textContent = '你们写下了同一个词。';
+      stage.innerHTML = '<h2>你们想到一起去了！</h2><p>游戏完成，可以在下面回顾每轮的回答。</p>';
+      break;
+  }
+}
+
+$('create').onclick = () => {
+  if (!inviteEntry) void changeRoom('create');
+};
+$('joinForm').onsubmit = event => {
+  event.preventDefault();
+  const code = $('roomCode').value.trim().toUpperCase();
+  if (ROOM_CODE.test(code)) void changeRoom('join', { code });
+  else toast('请输入 6 位房间码。');
+};
+$('leave').onclick = () => void changeRoom('leave');
+$('copy').onclick = async () => {
+  if (!room) return;
+  const code = room.code;
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('room', code);
+  try {
+    await navigator.clipboard.writeText(url.toString());
+    toast('邀请链接已复制。');
+  } catch {
+    toast('请把房间码 ' + code + ' 发给朋友。');
+  }
+};
+
+if (inviteEntry) {
+  hide('create', true);
+  hide('joinDivider', true);
+  $('entryTitle').textContent = '加入朋友的房间';
+  $('roomCode').value = roomCodeToRestore;
+}
+void restoreAccount();

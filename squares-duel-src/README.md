@@ -105,7 +105,7 @@ npm run build:pages
 node scripts/prepare-github-pages.mjs
 ```
 
-默认页面路径为 `/squares-duel/`，游戏接口为 `https://squares-duel-oct15.sacred-rhea-9950.chatgpt.site`。`PAGES_BASE`、`SQUARES_API_ORIGIN` 可用于其他部署或本地验证；正式导出脚本会校验默认配置、公开文件清单及服务端内容隔离，并在 `outputs/github-pages/` 下创建一个全新的发布目录。GitHub Actions 从本目录构建，自动将网页更新到仓库的 `squares-duel/` 目录并发布，保留个人主页和其他目录。源码与网页构建分目录维护；数据库内容和本地运行状态继续排除在 Git 之外。
+默认页面路径为 `/squares-duel/`，游戏接口为 `https://squares-duel-oct15.not-n0el.chatgpt.site`。`PAGES_BASE`、`SQUARES_API_ORIGIN` 可用于其他部署或本地验证；正式导出脚本会校验默认配置、公开文件清单及服务端内容隔离，并在 `outputs/github-pages/` 下创建一个全新的发布目录。GitHub Actions 从本目录构建，自动将网页更新到仓库的 `squares-duel/` 目录并发布，保留个人主页和其他目录。源码与网页构建分目录维护；数据库内容和本地运行状态继续排除在 Git 之外。
 
 服务端仅为精确来源 `https://le0n-97.github.io` 增加跨域支持，仍保留房间身份认证与服务器计分。预检不访问数据库，其他跨域来源被拒绝。本地对局记录接口不开放跨域，生产环境始终拒绝访问。
 
