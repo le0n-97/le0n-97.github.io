@@ -50,6 +50,13 @@
       "when": 1794456000000,
       "tag": "0006_word_sync_rooms",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794502115625,
+      "tag": "0007_password_reset",
+      "breakpoints": true
     }
   ]
 }

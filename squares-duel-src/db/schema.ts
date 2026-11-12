@@ -57,6 +57,11 @@ export const accountRates = sqliteTable('account_rates', {
   windowStart: integer('window_start').notNull(),
   hits: integer('hits').notNull(),
 }, table => [index('account_rates_window_idx').on(table.windowStart)]);
+export const accountPasswordResets = sqliteTable('account_password_resets', {
+  tokenHash: text('token_hash').primaryKey(),
+  receipt: text('receipt').notNull(),
+  usedAt: integer('used_at').notNull(),
+});
 export const ratingRounds = sqliteTable('rating_rounds', {
   id: text('id').primaryKey(),
   receipt: text('receipt').notNull(),

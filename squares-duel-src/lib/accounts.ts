@@ -48,7 +48,7 @@ async function derive(password: string, salt: Uint8Array): Promise<Uint8Array> {
     if (next) next(); else hashRunning = false;
   }
 }
-async function passwordHash(password: string): Promise<string> {
+export async function passwordHash(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   return HASH_PREFIX + bytesHex(salt) + '$' + bytesHex(await derive(password, salt));
 }

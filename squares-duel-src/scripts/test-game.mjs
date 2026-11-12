@@ -18,6 +18,7 @@ for (const [source, target] of [
   ['lib/records-admin.ts', 'records-admin.mjs'],
   ['lib/chat.ts', 'chat.mjs'],
   ['lib/accounts.ts', 'accounts.mjs'],
+  ['lib/password-reset.ts', 'password-reset.mjs'],
   ['lib/account-policy.ts', 'account-policy.mjs'],
   ['lib/api-client.ts', 'api-client.mjs'],
   ['lib/account-request.ts', 'account-request.mjs'],
@@ -35,6 +36,7 @@ for (const [source, target] of [
   ['app/api/admin/records/route.ts', 'records-route.mjs'],
   ['app/api/chat/route.ts', 'chat-route.mjs'],
   ['app/api/account/route.ts', 'account-route.mjs'],
+  ['app/api/account/reset/route.ts', 'password-reset-route.mjs'],
   ['app/api/leaderboard/route.ts', 'leaderboard-route.mjs'],
 ]) {
   const input = await readFile(path.join(root, source), 'utf8');
@@ -54,11 +56,12 @@ for (const [source, target] of [
     .replace(/(['"])cloudflare:workers\1/g, "'./api-env.mjs'");
   await writeFile(path.join(runtime, target), output);
 }
-await writeFile(path.join(runtime, 'api-env.mjs'), 'export const env = { get DB() { return globalThis.__gameTestDB; } };\n');
+await writeFile(path.join(runtime, 'api-env.mjs'), 'export const env = { get DB() { return globalThis.__gameTestDB; }, get SQUARES_PASSWORD_RESET() { return globalThis.__testPasswordReset; } };\n');
 const result = spawnSync(process.execPath, [
   '--test', '--test-concurrency=1',
   'tests/pages-site.test.mjs',
   'tests/word-sync.test.mjs', 'tests/word-sync-api.test.mjs',
+  'tests/password-reset.test.mjs',
   'tests/game.test.mjs', 'tests/api.test.mjs', 'tests/accounts.test.mjs', 'tests/account-request.test.mjs', 'tests/rating.test.mjs', 'tests/rating-api.test.mjs', 'tests/leaderboard.test.mjs', 'tests/pages-cors.test.mjs', 'tests/teams.test.mjs', 'tests/records.test.mjs', 'tests/chat.test.mjs', 'tests/generation.test.mjs', 'tests/word-routes.test.mjs', 'tests/drag-selection.test.mjs', 'tests/client-interactions.test.mjs',
 ], {
   cwd: root,
