@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'squares-duel-src/**'
+      - 'word-sync/**'
       - '.github/workflows/squares-duel.yml'
       - '_config.yml'
   pull_request:
     paths:
       - 'squares-duel-src/**'
+      - 'word-sync/**'
       - '.github/workflows/squares-duel.yml'
       - '_config.yml'
   workflow_dispatch:
